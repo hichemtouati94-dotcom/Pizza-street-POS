@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pizza Street POS</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#e5472b">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+:root{--bg:#f4e8d6;--card:#fffaf2;--ink:#3b2418;--mut:#8a6a55;--acc:#e5472b;--acc2:#c2410c;--onacc:#fff;--line:#e6d3b8;--ok:#237a47;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1d1612;--card:#2a201a;--ink:#f6e9da;--mut:#bba48f;--acc:#ff7a5f;--acc2:#ff9a52;--onacc:#2a120b;--line:#43342a;--ok:#4cc27f;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#1d1612;--card:#2a201a;--ink:#f6e9da;--mut:#bba48f;--acc:#ff7a5f;--acc2:#ff9a52;--onacc:#2a120b;--line:#43342a;--ok:#4cc27f;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:3px solid var(--acc2);outline-offset:2px}
+.app{max-width:1180px;margin:0 auto;display:grid;grid-template-columns:1fr;gap:12px;padding:12px 12px 90px}
+header{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;justify-content:space-between}
+h1{margin:0;font:800 1.5rem/1.1 Georgia,"Times New Roman",serif;color:var(--acc)}
+.sales{color:var(--mut);font-size:.85rem}
+.btn{border:2px solid var(--line);background:var(--card);border-radius:10px;padding:8px 14px;font-weight:700}
+.btn.on{background:var(--acc2);border-color:var(--acc2);color:var(--onacc)}
+.tabs{display:flex;gap:8px;margin:4px 0 10px}
+.tab{flex:1;border:2px solid var(--line);background:var(--card);border-radius:10px;padding:10px;font:700 1.05rem Georgia,serif}
+.tab.on{background:var(--acc);border-color:var(--acc);color:var(--onacc)}
+.bar{background:var(--card);border:2px dashed var(--acc2);border-radius:10px;padding:10px;margin-bottom:10px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:.9rem}
+.bar span{flex:1 1 200px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(165px,1fr));gap:10px}
+.item{position:relative;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:4px;cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent}
+.item:active{transform:scale(.98)}
+.item.ed{cursor:default}
+.nm{font-weight:800;font-size:1.05rem;color:var(--acc2)}
+.ds{font-size:.78rem;color:var(--mut);flex:1}
+.pr{font-weight:800;margin-top:4px}
+.q{position:absolute;top:-8px;right:-6px;min-width:26px;height:26px;border-radius:13px;background:var(--ok);color:#fff;font-weight:800;display:grid;place-items:center;padding:0 6px;font-size:.85rem}
+.pe{display:flex;align-items:center;gap:6px;margin-top:4px;font-weight:700}
+.pe input,.cash{width:100%;min-width:0;font:700 1.05rem inherit;padding:8px;border:2px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)}
+.cart{position:fixed;left:0;right:0;bottom:0;z-index:5;background:var(--card);border-top:3px solid var(--acc);border-radius:16px 16px 0 0;max-height:80vh;display:flex;flex-direction:column;padding-bottom:env(safe-area-inset-bottom,0px);transform:translateY(calc(100% - 64px - env(safe-area-inset-bottom,0px)));transition:transform .2s}
+.cart.open{transform:none}
+.chead{display:flex;align-items:center;gap:10px;height:64px;padding:0 16px;flex:none;cursor:pointer;font-weight:800}
+.chead .c{margin-left:auto;font-size:1.15rem;color:var(--acc2)}
+.lines{overflow-y:auto;padding:0 16px;flex:1;min-height:60px}
+.ln{display:grid;grid-template-columns:1fr auto auto;gap:4px 10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+.ln small{color:var(--mut);grid-column:1}
+.ln b.t{text-align:right;min-width:78px}
+.st{display:flex;align-items:center;gap:6px}
+.st button{width:34px;height:34px;border-radius:8px;border:2px solid var(--line);background:var(--bg);font-weight:800}
+.empty{color:var(--mut);padding:18px 0;text-align:center}
+.cfoot{padding:12px 16px;flex:none;border-top:1px solid var(--line)}
+.tot{display:flex;justify-content:space-between;font-size:1.4rem;font-weight:800;margin-bottom:10px}
+.row{display:flex;gap:8px}
+.ghost{flex:1;border:2px solid var(--line);background:var(--bg);border-radius:10px;padding:12px;font-weight:700}
+.pay{flex:2;border:0;background:var(--acc);color:var(--onacc);border-radius:10px;padding:12px;font-weight:800;font-size:1.1rem}
+.pay:disabled{opacity:.45}
+.ov{position:fixed;inset:0;z-index:10;background:rgba(0,0,0,.55);display:grid;place-items:center;padding:16px}
+.ov[hidden]{display:none}
+.modal{background:var(--card);border-radius:16px;padding:18px;width:100%;max-width:380px;max-height:90vh;overflow-y:auto}
+.modal h2{margin:0 0 10px;font:800 1.25rem Georgia,serif;color:var(--acc2)}
+.kv{display:flex;justify-content:space-between;padding:3px 0}
+.chg{font-weight:800;font-size:1.2rem;color:var(--ok)}
+.quick{display:flex;gap:6px;margin:8px 0}
+.quick button{flex:1;border:2px solid var(--line);background:var(--bg);border-radius:8px;padding:8px 2px;font-weight:700}
+@media(min-width:860px){
+.app{grid-template-columns:1fr 370px;padding-bottom:12px}
+header{grid-column:1/-1}
+.cart{position:sticky;top:12px;align-self:start;transform:none;border:1px solid var(--line);border-radius:14px;max-height:calc(100vh - 24px);padding-bottom:0;transition:none}
+.chead{cursor:default}
+}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+<div><h1>Pizza Street POS</h1><div class="sales" id="sales"></div></div>
+<button class="btn" id="editBtn">Edit prices</button>
+</header>
+<main>
+<div class="tabs" id="tabs"></div>
+<div class="bar" id="bar" hidden><span>Change a price below. It saves automatically.</span><button class="btn" id="rstP">Reset prices</button><button class="btn" id="rstS">Reset today’s sales</button></div>
+<div class="grid" id="menu"></div>
+</main>
+<aside class="cart" id="cart">
+<div class="chead" id="ctoggle"><span>Order</span><span id="cnt"></span><span class="c" id="ctot"></span></div>
+<div class="lines" id="lines"></div>
+<div class="cfoot"><div class="tot"><span>Total</span><span id="total"></span></div><div class="row"><button class="ghost" id="clear">Clear</button><button class="pay" id="pay">Charge</button></div></div>
+</aside>
+</div>
+<div class="ov" id="ov" hidden><div class="modal" id="modal"></div></div>
+<script>
+var RAW={
+Pizza:[["Marguerite",350,"sauce tomate, olive, cheddar, mozzarella"],["Végétarienne",480,"sauce tomate, poivron, tomate, oignon, champignon, cheddar, mozzarella"],["Indienne",650,"sauce blanche/tomate, oignon, poivre, poulet épicé, poulet haché, cheddar, mozzarella"],["Thon",550,"sauce tomate, thon, oignon, olive, cheddar, mozzarella"],["Mexicaine",680,"sauce tomate piquante, viande hachée, oignon, piment, fromage fumé, cheddar, mozzarella"],["Reine",620,"sauce tomate, volaille, champignons, olive, cheddar, mozzarella"],["Chef",580,"sauce tomate, volaille, oeuf, olive, cheddar, mozzarella"],["4 fromages",700,"sauce blanche, cheddar, gouda, camembert, mozzarella"],["Pepperoni",550,"sauce tomate, oignon, olive, pepperoni, cheddar, mozzarella"],["Supreme",800,"sauce tomate, poulet fumé, merguez, volaille, pepperoni, oignon, poivron, champignons, olive, cheddar, mozzarella"],["Pizza Street",720,"sauce tomate, merguez, viande hachée, poulet haché, cheddar, mozzarella"],["Buffalo",550,"sauce tomate, poivron, poulet haché, olive, cheddar, mozzarella"],["Oranaise",620,"sauce tomate, merguez, poulet haché, tomate, oignon, poivre, cheddar, mozzarella"],["Fruits de mer",850,"sauce blanche/tomate, fruits de mer, cheddar, mozzarella"],["Fermière",650,"sauce blanche, poulet rôti, oignon, champignon, cheddar, mozzarella"],["Chicago",620,"sauce tomate, pepperoni, merguez, oignon, cheddar, mozzarella"],["Algerienne",750,"sauce tomate/blanche, cheddar, mozzarella, poulet haché, viande hachée, poulet fumé, oignon, tomate cerise"]],
+Sandwich:[["Le Mexicain",480,"viande hachée, salade, tomates, oignon caramélisé, gouda, sauce piquante"],["Escalope",450,"escalope panée, salade, tomates, cheddar, mozzarella, sauce andalouse"],["Poulet haché",380,"poulet haché, salade, tomates, camembert, sauce fromage"]]
+};
+var CATS=Object.keys(RAW),MENU=[],BY={};
+CATS.forEach(function(c){RAW[c].forEach(function(r,k){var o={id:c[0]+k,cat:c,name:r[0],price:r[1],desc:r[2]};MENU.push(o);BY[o.id]=o;});});
+var $=function(s){return document.querySelector(s)};
+var fmt=function(n){return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g,"\u00a0")+"\u00a0DA"};
+var store={get:function(k,d){try{var v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set:function(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+var prices=store.get("pos_prices",{}),sales=store.get("pos_sales",{}),cart={},cat=CATS[0],edit=false;
+var today=function(){return new Date().toLocaleDateString("en-CA")};
+if(sales.d!==today())sales={d:today(),n:0,t:0};
+var price=function(i){return typeof prices[i.id]==="number"?prices[i.id]:i.price};
+var total=function(){var t=0;for(var id in cart)t+=price(BY[id])*cart[id];return t};
+
+function renderMenu(){
+$("#tabs").innerHTML=CATS.map(function(c){return '<button class="tab'+(c===cat?" on":"")+'" data-cat="'+c+'">'+c+'</button>'}).join("");
+$("#menu").innerHTML=MENU.filter(function(i){return i.cat===cat}).map(function(i){
+return '<div class="item'+(edit?" ed":"")+'" data-id="'+i.id+'">'+(cart[i.id]&&!edit?'<span class="q">'+cart[i.id]+'</span>':"")+'<div class="nm">'+i.name+'</div><div class="ds">'+i.desc+'</div>'+(edit?'<label class="pe"><input type="number" inputmode="numeric" min="0" step="10" value="'+price(i)+'" data-p="'+i.id+'" aria-label="Price for '+i.name+'">DA</label>':'<div class="pr">'+fmt(price(i))+'</div>')+'</div>'}).join("");
+$("#bar").hidden=!edit;
+$("#editBtn").className="btn"+(edit?" on":"");
+$("#editBtn").textContent=edit?"Done editing":"Edit prices";
+}
+function renderCart(){
+var ids=Object.keys(cart),n=0;
+$("#lines").innerHTML=ids.length?ids.map(function(id){var i=BY[id],q=cart[id];n+=q;
+return '<div class="ln"><b>'+i.name+'</b><div class="st"><button data-a="dec" data-id="'+id+'" aria-label="Remove one">−</button><b>'+q+'</b><button data-a="inc" data-id="'+id+'" aria-label="Add one">+</button></div><b class="t">'+fmt(price(i)*q)+'</b><small>'+fmt(price(i))+' each</small></div>'}).join(""):'<p class="empty">No items yet. Tap a menu item to add it.</p>';
+var t=total();
+$("#total").textContent=fmt(t);$("#ctot").textContent=fmt(t);
+$("#cnt").textContent=n?n+(n>1?" items":" item"):"";
+$("#pay").disabled=!n;
+$("#sales").textContent="Today: "+sales.n+(sales.n===1?" order, ":" orders, ")+fmt(sales.t);
+}
+function renderAll(){renderMenu();renderCart()}
+
+$("#tabs").onclick=function(e){var b=e.target.closest("[data-cat]");if(b){cat=b.dataset.cat;renderMenu()}};
+$("#menu").onclick=function(e){if(edit)return;var it=e.target.closest(".item");if(!it)return;cart[it.dataset.id]=(cart[it.dataset.id]||0)+1;renderAll()};
+$("#menu").oninput=function(e){var id=e.target.dataset.p;if(!id)return;var v=parseInt(e.target.value,10);if(isNaN(v)||v<0)return;prices[id]=v;store.set("pos_prices",prices);renderCart()};
+$("#lines").onclick=function(e){var b=e.target.closest("[data-a]");if(!b)return;var id=b.dataset.id;cart[id]+=b.dataset.a==="inc"?1:-1;if(cart[id]<1)delete cart[id];renderAll()};
+$("#editBtn").onclick=function(){edit=!edit;renderMenu()};
+$("#ctoggle").onclick=function(){if(window.matchMedia("(min-width:860px)").matches)return;$("#cart").classList.toggle("open")};
+$("#clear").onclick=function(){cart={};renderAll()};
+
+function armed(btn,label,fn){var on=false,t;btn.onclick=function(){if(on){clearTimeout(t);on=false;btn.textContent=label;fn();return}on=true;btn.textContent="Tap again to confirm";t=setTimeout(function(){on=false;btn.textContent=label},3000)}}
+armed($("#rstP"),"Reset prices",function(){prices={};store.set("pos_prices",prices);renderAll()});
+armed($("#rstS"),"Reset today’s sales",function(){sales={d:today(),n:0,t:0};store.set("pos_sales",sales);renderCart()});
+
+function show(html){$("#modal").innerHTML=html;$("#ov").hidden=false}
+function hide(){$("#ov").hidden=true}
+$("#pay").onclick=function(){
+var t=total();if(!t&&!Object.keys(cart).length)return;
+show('<h2>Charge</h2><div class="kv"><span>Total</span><b>'+fmt(t)+'</b></div><label for="cash">Cash received (optional)</label><input class="cash" id="cash" type="number" inputmode="numeric" min="0" placeholder="'+t+'"><div class="quick"><button data-q="'+t+'">Exact</button><button data-q="1000">1 000</button><button data-q="2000">2 000</button><button data-q="5000">5 000</button></div><div class="kv"><span>Change</span><span class="chg" id="chg">0 DA</span></div><div class="row" style="margin-top:12px"><button class="ghost" id="cx">Cancel</button><button class="pay" id="ok">Confirm</button></div>');
+var cash=$("#cash"),ok=$("#ok");
+function upd(){var v=cash.value===""?t:parseInt(cash.value,10);var bad=isNaN(v)||v<t;ok.disabled=bad;$("#chg").textContent=bad?"—":fmt(v-t)}
+cash.oninput=upd;upd();
+$("#modal").querySelector(".quick").onclick=function(e){var b=e.target.closest("[data-q]");if(b){cash.value=b.dataset.q;upd()}};
+$("#cx").onclick=hide;
+ok.onclick=function(){
+var paid=cash.value===""?t:parseInt(cash.value,10);
+sales.n++;sales.t+=t;sales.d=today();store.set("pos_sales",sales);
+var rows=Object.keys(cart).map(function(id){var i=BY[id];return '<div class="kv"><span>'+cart[id]+' × '+i.name+'</span><span>'+fmt(price(i)*cart[id])+'</span></div>'}).join("");
+var now=new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});
+show('<h2>Order #'+sales.n+' paid</h2><div class="sales">'+now+'</div><div style="margin:10px 0">'+rows+'</div><div class="kv"><b>Total</b><b>'+fmt(t)+'</b></div><div class="kv"><span>Cash received</span><span>'+fmt(paid)+'</span></div><div class="kv"><span>Change</span><span class="chg">'+fmt(paid-t)+'</span></div><button class="pay" id="done" style="width:100%;margin-top:12px">New order</button>');
+cart={};$("#cart").classList.remove("open");renderAll();
+$("#done").onclick=hide;
+};
+};
+renderAll();
+if("serviceWorker" in navigator){window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})})}
+</script>
+</body>
+</html>
