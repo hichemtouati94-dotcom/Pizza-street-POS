@@ -71,6 +71,9 @@ h1{margin:0;font:800 1.5rem/1.1 Georgia,"Times New Roman",serif;color:var(--acc)
 .dh{display:flex;justify-content:space-between;gap:8px;margin-top:12px;padding:6px 8px;background:var(--bg);border-radius:8px;font-size:.9rem}
 details{border-bottom:1px solid var(--line);padding:6px 0}
 summary{display:flex;justify-content:space-between;cursor:pointer;font-weight:600}
+.pw{margin-top:10px}.pw .row{gap:6px}.pm{min-height:1.2em;margin-top:4px}
+@media screen{#pa{display:none}}
+@media print{@page{margin:4mm}body>*:not(#pa){display:none!important}#pa{display:block;margin:0;font:10px/1.25 monospace;white-space:pre;color:#000;background:#fff}}
 @media(min-width:860px){
 .app{grid-template-columns:1fr 370px;padding-bottom:12px}
 header{grid-column:1/-1}
@@ -89,6 +92,7 @@ header{grid-column:1/-1}
 <div class="tabs" id="tabs"></div>
 <div class="bar" id="bar" hidden><span>Change prices, add or remove items. Everything saves automatically.</span>
 <div class="add"><select id="nc" aria-label="Category"><option>Pizza</option><option>Sandwich</option></select><input id="nn" placeholder="New item name"><input id="np" type="number" inputmode="numeric" min="0" placeholder="Price (DA)"><input id="nd" placeholder="Ingredients (optional)"><button class="btn on" id="addBtn">Add</button></div>
+<label>Paper <select id="pw" class="btn"><option value="32">58 mm</option><option value="48">80 mm</option></select></label>
 <button class="btn" id="rstP">Reset menu</button></div>
 <div class="grid" id="menu"></div>
 </main>
@@ -98,6 +102,7 @@ header{grid-column:1/-1}
 <div class="cfoot"><div class="tot"><span>Total</span><span id="total"></span></div><div class="row"><button class="ghost" id="clear">Clear</button><button class="pay" id="pay">Charge</button></div></div>
 </aside>
 </div>
+<pre id="pa"></pre>
 <div class="ov" id="ov" hidden><div class="modal" id="modal"></div></div>
 <script>
 var RAW={
@@ -172,7 +177,7 @@ var paid=cash.value===""?t:parseInt(cash.value,10);
 var num=tsales().n+1;hist.push({n:num,d:today(),ts:Date.now(),t:t,paid:paid,l:Object.keys(cart).map(function(id){return[BY[id].name,cart[id],price(BY[id])]})});if(hist.length>5000)hist.shift();store.set("pos_hist",hist);
 var rows=Object.keys(cart).map(function(id){var i=BY[id];return '<div class="kv"><span>'+cart[id]+' × '+i.name+'</span><span>'+fmt(price(i)*cart[id])+'</span></div>'}).join("");
 var now=new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});
-show('<h2>Order #'+num+' paid</h2><div class="sales">'+now+'</div><div style="margin:10px 0">'+rows+'</div><div class="kv"><b>Total</b><b>'+fmt(t)+'</b></div><div class="kv"><span>Cash received</span><span>'+fmt(paid)+'</span></div><div class="kv"><span>Change</span><span class="chg">'+fmt(paid-t)+'</span></div><button class="pay" id="done" style="width:100%;margin-top:12px">New order</button>');
+show('<h2>Order #'+num+' paid</h2><div class="sales">'+now+'</div><div style="margin:10px 0">'+rows+'</div><div class="kv"><b>Total</b><b>'+fmt(t)+'</b></div><div class="kv"><span>Cash received</span><span>'+fmt(paid)+'</span></div><div class="kv"><span>Change</span><span class="chg">'+fmt(paid-t)+'</span></div>'+pbtns(hist.length-1)+'<button class="pay" id="done" style="width:100%;margin-top:12px">New order</button>');
 cart={};$("#cart").classList.remove("open");renderAll();
 $("#done").onclick=hide;
 };
@@ -182,11 +187,43 @@ var days={};hist.forEach(function(o){(days[o.d]=days[o.d]||[]).push(o)});
 var keys=Object.keys(days).sort().reverse();
 var h='<h2>Sales history</h2>'+(keys.length?keys.map(function(d){var os=days[d].slice().reverse(),t=0;os.forEach(function(o){t+=o.t});
 return '<div class="dh"><b>'+(d===today()?"Today":d)+'</b><b>'+os.length+(os.length>1?" orders · ":" order · ")+fmt(t)+'</b></div>'+os.map(function(o){
-return '<details><summary><span>#'+o.n+' · '+new Date(o.ts).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})+'</span><b>'+fmt(o.t)+'</b></summary>'+o.l.map(function(l){return '<div class="kv"><span>'+l[1]+' × '+l[0]+'</span><span>'+fmt(l[1]*l[2])+'</span></div>'}).join("")+'<div class="kv"><span>Cash received</span><span>'+fmt(o.paid)+'</span></div></details>'}).join("")}).join(""):'<p class="empty">No orders yet.</p>')+'<div class="row" style="margin-top:12px"><button class="ghost" id="clh">Clear history</button><button class="pay" id="hx">Close</button></div>';
+return '<details><summary><span>#'+o.n+' · '+new Date(o.ts).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})+'</span><b>'+fmt(o.t)+'</b></summary>'+o.l.map(function(l){return '<div class="kv"><span>'+l[1]+' × '+l[0]+'</span><span>'+fmt(l[1]*l[2])+'</span></div>'}).join("")+'<div class="kv"><span>Cash received</span><span>'+fmt(o.paid)+'</span></div>'+pbtns(hist.indexOf(o))+'</details>'}).join("")}).join(""):'<p class="empty">No orders yet.</p>')+'<div class="row" style="margin-top:12px"><button class="ghost" id="clh">Clear history</button><button class="pay" id="hx">Close</button></div>';
 show(h);$("#hx").onclick=hide;
 armed($("#clh"),"Clear history",function(){hist=[];store.set("pos_hist",hist);renderCart();showHist()});
 }
 $("#histBtn").onclick=showHist;
+function strip(s){return String(s).replace(/&amp;/g,"&").replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&quot;/g,'"').replace(/\u00a0/g," ").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^\x20-\x7e]/g,"")}
+function rtext(o){
+var W=+store.get("pos_w",32),R=function(n){return " ".repeat(Math.max(0,n))};
+var c=function(s){s=strip(s);return R(Math.floor((W-s.length)/2))+s};
+var ln=function(a,b){a=strip(a);b=strip(b);a=a.slice(0,Math.max(1,W-b.length-1));return a+R(W-a.length-b.length)+b};
+var L=[c("PIZZA STREET"),c(o.d+" "+new Date(o.ts).toTimeString().slice(0,5)),c("Order #"+o.n),"-".repeat(W)];
+o.l.forEach(function(l){L.push(ln(l[1]+"x "+l[0],fmt(l[1]*l[2])))});
+L.push("-".repeat(W),ln("TOTAL",fmt(o.t)),ln("Cash",fmt(o.paid)),ln("Change",fmt(o.paid-o.t)),"",c("Merci !"));
+return L.join("\n")}
+function escpos(o){var b=[0x1b,0x40],t=new TextEncoder().encode(rtext(o)+"\n\n\n\n");for(var i=0;i<t.length;i++)b.push(t[i]);if(+store.get("pos_w",32)===48)b.push(0x1d,0x56,0x42,0x00);return new Uint8Array(b)}
+var pmEl=null,btDev=null,btChar=null;
+function msg(t){if(pmEl)pmEl.textContent=t}
+function pbtns(i){return '<div class="pw"><div class="row"><button class="ghost" data-pr="raw" data-i="'+i+'">RawBT</button><button class="ghost" data-pr="bt" data-i="'+i+'">Bluetooth</button><button class="ghost" data-pr="sys" data-i="'+i+'">Print</button></div><div class="sales pm"></div></div>'}
+function printSys(o){$("#pa").textContent=rtext(o);window.print()}
+function printRaw(o){var b=escpos(o),s="";for(var i=0;i<b.length;i++)s+=String.fromCharCode(b[i]);msg("Opening RawBT…");location.href="intent:base64,"+btoa(s)+"#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;"}
+var SV=["000018f0-0000-1000-8000-00805f9b34fb","0000ffe0-0000-1000-8000-00805f9b34fb","0000ff00-0000-1000-8000-00805f9b34fb","0000fee7-0000-1000-8000-00805f9b34fb","49535343-fe7d-4ae5-8fa9-9fafd205e455","e7810a71-73ae-499d-8c15-faa9aef0c3f2"];
+async function printBT(o){
+if(!navigator.bluetooth){msg("Bluetooth is not available here. Use RawBT or Print.");return}
+try{
+if(!btChar||!btDev.gatt.connected){
+msg("Choose your printer…");
+if(!btDev)btDev=await navigator.bluetooth.requestDevice({acceptAllDevices:true,optionalServices:SV});
+var srv=await btDev.gatt.connect(),ss=await srv.getPrimaryServices();btChar=null;
+for(var s of ss){var cs=await s.getCharacteristics();for(var c of cs){if(c.properties.write||c.properties.writeWithoutResponse){btChar=c;break}}if(btChar)break}
+if(!btChar)throw new Error("this printer is not supported. Use RawBT.")}
+var b=escpos(o);
+for(var i=0;i<b.length;i+=100){var p=b.slice(i,i+100);if(btChar.properties.writeWithoutResponse)await btChar.writeValueWithoutResponse(p);else await btChar.writeValue(p);await new Promise(function(r){setTimeout(r,40)})}
+msg("Sent to printer ✓")
+}catch(e){btDev=null;btChar=null;msg("Bluetooth: "+(e.message||e))}}
+$("#modal").addEventListener("click",function(e){var b=e.target.closest("[data-pr]");if(!b)return;var o=hist[+b.dataset.i];if(!o)return;pmEl=b.closest(".pw").querySelector(".pm");var m=b.dataset.pr;if(m==="raw")printRaw(o);else if(m==="bt")printBT(o);else printSys(o)});
+$("#pw").value=String(store.get("pos_w",32));$("#pw").onchange=function(){store.set("pos_w",+this.value)};
+
 renderAll();
 if("serviceWorker" in navigator){window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})})}
 </script>
