@@ -63,6 +63,14 @@ h1{margin:0;font:800 1.5rem/1.1 Georgia,"Times New Roman",serif;color:var(--acc)
 .chg{font-weight:800;font-size:1.2rem;color:var(--ok)}
 .quick{display:flex;gap:6px;margin:8px 0}
 .quick button{flex:1;border:2px solid var(--line);background:var(--bg);border-radius:8px;padding:8px 2px;font-weight:700}
+.bar[hidden]{display:none}
+.hb{display:flex;gap:8px}
+.add{display:flex;flex-wrap:wrap;gap:6px;flex:1 1 100%}
+.add input,.add select{flex:1 1 110px;min-width:0;font:inherit;padding:8px;border:2px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)}
+.del{margin-top:6px;border:2px solid var(--line);background:var(--bg);border-radius:8px;padding:6px;font-weight:700;color:var(--acc2)}
+.dh{display:flex;justify-content:space-between;gap:8px;margin-top:12px;padding:6px 8px;background:var(--bg);border-radius:8px;font-size:.9rem}
+details{border-bottom:1px solid var(--line);padding:6px 0}
+summary{display:flex;justify-content:space-between;cursor:pointer;font-weight:600}
 @media(min-width:860px){
 .app{grid-template-columns:1fr 370px;padding-bottom:12px}
 header{grid-column:1/-1}
@@ -75,11 +83,13 @@ header{grid-column:1/-1}
 <div class="app">
 <header>
 <div><h1>Pizza Street POS</h1><div class="sales" id="sales"></div></div>
-<button class="btn" id="editBtn">Edit prices</button>
+<div class="hb"><button class="btn" id="histBtn">History</button><button class="btn" id="editBtn">Edit menu</button></div>
 </header>
 <main>
 <div class="tabs" id="tabs"></div>
-<div class="bar" id="bar" hidden><span>Change a price below. It saves automatically.</span><button class="btn" id="rstP">Reset prices</button><button class="btn" id="rstS">Reset today’s sales</button></div>
+<div class="bar" id="bar" hidden><span>Change prices, add or remove items. Everything saves automatically.</span>
+<div class="add"><select id="nc" aria-label="Category"><option>Pizza</option><option>Sandwich</option></select><input id="nn" placeholder="New item name"><input id="np" type="number" inputmode="numeric" min="0" placeholder="Price (DA)"><input id="nd" placeholder="Ingredients (optional)"><button class="btn on" id="addBtn">Add</button></div>
+<button class="btn" id="rstP">Reset menu</button></div>
 <div class="grid" id="menu"></div>
 </main>
 <aside class="cart" id="cart">
@@ -95,23 +105,25 @@ Pizza:[["Marguerite",350,"sauce tomate, olive, cheddar, mozzarella"],["Végétar
 Sandwich:[["Le Mexicain",480,"viande hachée, salade, tomates, oignon caramélisé, gouda, sauce piquante"],["Escalope",450,"escalope panée, salade, tomates, cheddar, mozzarella, sauce andalouse"],["Poulet haché",380,"poulet haché, salade, tomates, camembert, sauce fromage"]]
 };
 var CATS=Object.keys(RAW),MENU=[],BY={};
-CATS.forEach(function(c){RAW[c].forEach(function(r,k){var o={id:c[0]+k,cat:c,name:r[0],price:r[1],desc:r[2]};MENU.push(o);BY[o.id]=o;});});
 var $=function(s){return document.querySelector(s)};
 var fmt=function(n){return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g,"\u00a0")+"\u00a0DA"};
 var store={get:function(k,d){try{var v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set:function(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
-var prices=store.get("pos_prices",{}),sales=store.get("pos_sales",{}),cart={},cat=CATS[0],edit=false;
+var prices=store.get("pos_prices",{}),custom=store.get("pos_custom",[]),hidden=store.get("pos_hidden",[]),hist=store.get("pos_hist",[]),cart={},cat=CATS[0],edit=false;
 var today=function(){return new Date().toLocaleDateString("en-CA")};
-if(sales.d!==today())sales={d:today(),n:0,t:0};
+var esc=function(s){return String(s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})};
+var tsales=function(){var n=0,t=0;hist.forEach(function(o){if(o.d===today()){n++;t+=o.t}});return{n:n,t:t}};
+function buildMenu(){var all=[];CATS.forEach(function(c){RAW[c].forEach(function(r,k){all.push({id:c[0]+k,cat:c,name:r[0],price:r[1],desc:r[2]})})});custom.forEach(function(o){all.push(o)});BY={};all.forEach(function(o){BY[o.id]=o});MENU=all.filter(function(o){return hidden.indexOf(o.id)<0})}
+buildMenu();
 var price=function(i){return typeof prices[i.id]==="number"?prices[i.id]:i.price};
 var total=function(){var t=0;for(var id in cart)t+=price(BY[id])*cart[id];return t};
 
 function renderMenu(){
 $("#tabs").innerHTML=CATS.map(function(c){return '<button class="tab'+(c===cat?" on":"")+'" data-cat="'+c+'">'+c+'</button>'}).join("");
 $("#menu").innerHTML=MENU.filter(function(i){return i.cat===cat}).map(function(i){
-return '<div class="item'+(edit?" ed":"")+'" data-id="'+i.id+'">'+(cart[i.id]&&!edit?'<span class="q">'+cart[i.id]+'</span>':"")+'<div class="nm">'+i.name+'</div><div class="ds">'+i.desc+'</div>'+(edit?'<label class="pe"><input type="number" inputmode="numeric" min="0" step="10" value="'+price(i)+'" data-p="'+i.id+'" aria-label="Price for '+i.name+'">DA</label>':'<div class="pr">'+fmt(price(i))+'</div>')+'</div>'}).join("");
+return '<div class="item'+(edit?" ed":"")+'" data-id="'+i.id+'">'+(cart[i.id]&&!edit?'<span class="q">'+cart[i.id]+'</span>':"")+'<div class="nm">'+i.name+'</div><div class="ds">'+i.desc+'</div>'+(edit?'<label class="pe"><input type="number" inputmode="numeric" min="0" step="10" value="'+price(i)+'" data-p="'+i.id+'" aria-label="Price for '+i.name+'">DA</label><button class="del" data-del="'+i.id+'">Remove</button>':'<div class="pr">'+fmt(price(i))+'</div>')+'</div>'}).join("");
 $("#bar").hidden=!edit;
 $("#editBtn").className="btn"+(edit?" on":"");
-$("#editBtn").textContent=edit?"Done editing":"Edit prices";
+$("#editBtn").textContent=edit?"Done editing":"Edit menu";
 }
 function renderCart(){
 var ids=Object.keys(cart),n=0;
@@ -121,12 +133,18 @@ var t=total();
 $("#total").textContent=fmt(t);$("#ctot").textContent=fmt(t);
 $("#cnt").textContent=n?n+(n>1?" items":" item"):"";
 $("#pay").disabled=!n;
-$("#sales").textContent="Today: "+sales.n+(sales.n===1?" order, ":" orders, ")+fmt(sales.t);
+var sd=tsales();$("#sales").textContent="Today: "+sd.n+(sd.n===1?" order, ":" orders, ")+fmt(sd.t);
 }
 function renderAll(){renderMenu();renderCart()}
 
 $("#tabs").onclick=function(e){var b=e.target.closest("[data-cat]");if(b){cat=b.dataset.cat;renderMenu()}};
-$("#menu").onclick=function(e){if(edit)return;var it=e.target.closest(".item");if(!it)return;cart[it.dataset.id]=(cart[it.dataset.id]||0)+1;renderAll()};
+$("#menu").onclick=function(e){
+if(edit){var d=e.target.closest("[data-del]");if(!d)return;
+if(!d.dataset.arm){d.dataset.arm="1";d.textContent="Tap again";setTimeout(function(){d.dataset.arm="";d.textContent="Remove"},3000);return}
+var id=d.dataset.del,ci=custom.findIndex(function(o){return o.id===id});
+if(ci>=0){custom.splice(ci,1);store.set("pos_custom",custom)}else{hidden.push(id);store.set("pos_hidden",hidden)}
+delete cart[id];buildMenu();renderAll();return}
+var it=e.target.closest(".item");if(!it)return;cart[it.dataset.id]=(cart[it.dataset.id]||0)+1;renderAll()};
 $("#menu").oninput=function(e){var id=e.target.dataset.p;if(!id)return;var v=parseInt(e.target.value,10);if(isNaN(v)||v<0)return;prices[id]=v;store.set("pos_prices",prices);renderCart()};
 $("#lines").onclick=function(e){var b=e.target.closest("[data-a]");if(!b)return;var id=b.dataset.id;cart[id]+=b.dataset.a==="inc"?1:-1;if(cart[id]<1)delete cart[id];renderAll()};
 $("#editBtn").onclick=function(){edit=!edit;renderMenu()};
@@ -134,8 +152,10 @@ $("#ctoggle").onclick=function(){if(window.matchMedia("(min-width:860px)").match
 $("#clear").onclick=function(){cart={};renderAll()};
 
 function armed(btn,label,fn){var on=false,t;btn.onclick=function(){if(on){clearTimeout(t);on=false;btn.textContent=label;fn();return}on=true;btn.textContent="Tap again to confirm";t=setTimeout(function(){on=false;btn.textContent=label},3000)}}
-armed($("#rstP"),"Reset prices",function(){prices={};store.set("pos_prices",prices);renderAll()});
-armed($("#rstS"),"Reset today’s sales",function(){sales={d:today(),n:0,t:0};store.set("pos_sales",sales);renderCart()});
+armed($("#rstP"),"Reset menu",function(){prices={};custom=[];hidden=[];store.set("pos_prices",prices);store.set("pos_custom",custom);store.set("pos_hidden",hidden);buildMenu();renderAll()});
+$("#addBtn").onclick=function(){var n=$("#nn").value.trim(),p=parseInt($("#np").value,10);if(!n||isNaN(p)||p<0){$("#nn").focus();return}
+cat=$("#nc").value;custom.push({id:"c"+Date.now(),cat:cat,name:esc(n),price:p,desc:esc($("#nd").value.trim())});store.set("pos_custom",custom);
+["#nn","#np","#nd"].forEach(function(q){$(q).value=""});buildMenu();renderAll()};
 
 function show(html){$("#modal").innerHTML=html;$("#ov").hidden=false}
 function hide(){$("#ov").hidden=true}
@@ -149,14 +169,24 @@ $("#modal").querySelector(".quick").onclick=function(e){var b=e.target.closest("
 $("#cx").onclick=hide;
 ok.onclick=function(){
 var paid=cash.value===""?t:parseInt(cash.value,10);
-sales.n++;sales.t+=t;sales.d=today();store.set("pos_sales",sales);
+var num=tsales().n+1;hist.push({n:num,d:today(),ts:Date.now(),t:t,paid:paid,l:Object.keys(cart).map(function(id){return[BY[id].name,cart[id],price(BY[id])]})});if(hist.length>5000)hist.shift();store.set("pos_hist",hist);
 var rows=Object.keys(cart).map(function(id){var i=BY[id];return '<div class="kv"><span>'+cart[id]+' × '+i.name+'</span><span>'+fmt(price(i)*cart[id])+'</span></div>'}).join("");
 var now=new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});
-show('<h2>Order #'+sales.n+' paid</h2><div class="sales">'+now+'</div><div style="margin:10px 0">'+rows+'</div><div class="kv"><b>Total</b><b>'+fmt(t)+'</b></div><div class="kv"><span>Cash received</span><span>'+fmt(paid)+'</span></div><div class="kv"><span>Change</span><span class="chg">'+fmt(paid-t)+'</span></div><button class="pay" id="done" style="width:100%;margin-top:12px">New order</button>');
+show('<h2>Order #'+num+' paid</h2><div class="sales">'+now+'</div><div style="margin:10px 0">'+rows+'</div><div class="kv"><b>Total</b><b>'+fmt(t)+'</b></div><div class="kv"><span>Cash received</span><span>'+fmt(paid)+'</span></div><div class="kv"><span>Change</span><span class="chg">'+fmt(paid-t)+'</span></div><button class="pay" id="done" style="width:100%;margin-top:12px">New order</button>');
 cart={};$("#cart").classList.remove("open");renderAll();
 $("#done").onclick=hide;
 };
 };
+function showHist(){
+var days={};hist.forEach(function(o){(days[o.d]=days[o.d]||[]).push(o)});
+var keys=Object.keys(days).sort().reverse();
+var h='<h2>Sales history</h2>'+(keys.length?keys.map(function(d){var os=days[d].slice().reverse(),t=0;os.forEach(function(o){t+=o.t});
+return '<div class="dh"><b>'+(d===today()?"Today":d)+'</b><b>'+os.length+(os.length>1?" orders · ":" order · ")+fmt(t)+'</b></div>'+os.map(function(o){
+return '<details><summary><span>#'+o.n+' · '+new Date(o.ts).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})+'</span><b>'+fmt(o.t)+'</b></summary>'+o.l.map(function(l){return '<div class="kv"><span>'+l[1]+' × '+l[0]+'</span><span>'+fmt(l[1]*l[2])+'</span></div>'}).join("")+'<div class="kv"><span>Cash received</span><span>'+fmt(o.paid)+'</span></div></details>'}).join("")}).join(""):'<p class="empty">No orders yet.</p>')+'<div class="row" style="margin-top:12px"><button class="ghost" id="clh">Clear history</button><button class="pay" id="hx">Close</button></div>';
+show(h);$("#hx").onclick=hide;
+armed($("#clh"),"Clear history",function(){hist=[];store.set("pos_hist",hist);renderCart();showHist()});
+}
+$("#histBtn").onclick=showHist;
 renderAll();
 if("serviceWorker" in navigator){window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})})}
 </script>
